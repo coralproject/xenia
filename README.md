@@ -34,7 +34,7 @@ Configuration describing the endpoints and queries are stored in a mongo collect
     * source your edited cfg file to create and set the environment variables
 
     ```
-    source $GOPATH/src/github.com/coralproject/xenia/config/[thefile].cfg
+    source $GOPATH/src/github.com/coralproject/xenia/config/foo.cfg
     ```
 
     The following environment variables must be set before running any of the code:
