@@ -12,9 +12,9 @@ Configuration describing the endpoints and queries are stored in a mongo collect
 
 ### Download source code
 
-1) Make sure you're have [go 1.5 or later](https://golang.org/dl/) installed and your [environment set up](https://golang.org/doc/install).
+1. Make sure you're have [go 1.5 or later](https://golang.org/dl/) installed and your [environment set up](https://golang.org/doc/install).
 
-2) Make sure your go vendor experiment flag is set (will be set by default in a couple of months...)
+2. Make sure your go vendor experiment flag is set (will be set by default in a couple of months...)
 
 ```
 export GO15VENDOREXPERIMENT=1
@@ -22,13 +22,13 @@ export GO15VENDOREXPERIMENT=1
 
 _We recommend adding this to your ~/.bash_profile or other startup script as it will become default go behavior soon._
 
-3) Get the source code:
+3. Get the source code:
 
 ```
 go get github.com/coralproject/xenia
 ```
 
-4) Set up your environment variables
+4. Set up your environment variables
 
 This tells xenia which database you want to use, sets your port, and sets your database key.
 
