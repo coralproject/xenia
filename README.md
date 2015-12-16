@@ -14,7 +14,9 @@ Configuration describing the endpoints and queries are stored in a mongo collect
 
 1. Install golang and set up your environment
     * Get [go 1.5 or later](https://golang.org/dl/). Check that by running `$ which go` in bash.
-    * Get your [environment set up](https://golang.org/doc/install). If the installation proceeded correctly, you will have `/usr/local/go/bin` added to your path. You can check that by typing `echo $PATH`, which should now include `/usr/local/go/bin`. You'll also need to set up your `$GOPATH` and point it at the directory you plan to work from, ie., `$ export GOPATH=$HOME/coral`
+    * Get your [environment set up](https://golang.org/doc/install). 
+      * If the installation proceeded correctly, you will have `/usr/local/go/bin` added to your path. You can check that by typing `echo $PATH`, which should now include `/usr/local/go/bin`. 
+      * You'll also need to set up your `$GOPATH` and point it at the root of the directory you plan to work from, ie., `$ export GOPATH=$HOME/code` or `$ export GOPATH=$HOME/coral`
 
 2. Set go vendor experiment flag (will be set by default in a couple of months)
     ```
