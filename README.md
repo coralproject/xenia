@@ -28,7 +28,9 @@ _We recommend adding this to your ~/.bash_profile or other startup script as it 
 go get github.com/coralproject/xenia
 ```
 
-4) Tell xenia which database you want to use:
+4) Set up your environment variables
+
+This tells xenia which database you want to use, sets your port, and sets your database key.
 
 Make your own copy of `config/dev.cfg` - `config/foo.cfg` - into the `config/` directory. Edit your version to set the appropriate values. Finally source your edited cfg file to create and set the environment variables: 
 
