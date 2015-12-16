@@ -30,7 +30,7 @@ go get github.com/coralproject/xenia
 
 4) Tell xenia which database you want to use:
 
-Make a copy of `config/dev.cfg` and then edit your version to set the appropriate values. Finally source your edited cfg file to create and set the environment variables: 
+Make your own copy of `config/dev.cfg` - `config/foo.cfg` - into the `config/` directory. Edit your version to set the appropriate values. Finally source your edited cfg file to create and set the environment variables: 
 
 ```
 source $GOPATH/src/github.com/coralproject/xenia/config/[thefile].cfg
