@@ -29,32 +29,31 @@ Configuration describing the endpoints and queries are stored in a mongo collect
     ```
 
 4. Set up your environment variables
-
-    This tells xenia which database you want to use, sets your port, and sets your database key.
-
-    Make your own copy of `config/dev.cfg` - `config/foo.cfg` - into the `config/` directory. Edit your version to set the appropriate values. Finally source your edited cfg file to create and set the environment variables: 
+    * Make your own copy of `config/dev.cfg` - `config/foo.cfg` - into the `config/` directory. 
+    * Edit your version to reflect your desired values. 
+    * source your edited cfg file to create and set the environment variables
 
     ```
     source $GOPATH/src/github.com/coralproject/xenia/config/[thefile].cfg
     ```
 
-    These environment variables must be set before running any of the code.
+    The following environment variables must be set before running any of the code:
 
     ```
-    export XENIA_MONGO_HOST=52.23.154.37:27017
-    export XENIA_MONGO_USER=coral-user
-    export XENIA_MONGO_AUTHDB=coral
-    export XENIA_MONGO_DB=coral
+    XENIA_MONGO_HOST=52.23.154.37:27017
+    XENIA_MONGO_USER=coral-user
+    XENIA_MONGO_AUTHDB=coral
+    XENIA_MONGO_DB=coral
 
-    export XENIA_LOGGING_LEVEL=1
+    XENIA_LOGGING_LEVEL=1
 
-    export XENIA_XENIA_HOST=:4000
+    XENIA_XENIA_HOST=:4000
 
     # DO NOT PUSH TO REPO
-    export XENIA_MONGO_PASS=
+    XENIA_MONGO_PASS=
     ```
 
-    _Be careful not to commit any database passwords back to the repo!!_
+    _Be careful not to commit any database passwords back to the repo!_
 
 ### Build the CLI tool
 
