@@ -20,14 +20,14 @@ Configuration describing the endpoints and queries are stored in a mongo collect
 
 2. Set go vendor experiment flag (will be set by default in a couple of months)
     ```
-    export GO15VENDOREXPERIMENT=1
+    $ export GO15VENDOREXPERIMENT=1
     ```
     _We recommend adding this to your `~/.bash_profile` or other startup script as it will become default go behavior soon._
 
 3. Get the source code:
 
     ```
-    go get github.com/coralproject/xenia
+    $ go get github.com/coralproject/xenia
     ```
 
 4. Set up your environment variables
@@ -36,7 +36,7 @@ Configuration describing the endpoints and queries are stored in a mongo collect
     * source your edited cfg file to create and set the environment variables
 
     ```
-    source $GOPATH/src/github.com/coralproject/xenia/config/foo.cfg
+    $ source $GOPATH/src/github.com/coralproject/xenia/config/foo.cfg
     ```
 
     The following environment variables must be set before running any of the code:
@@ -59,20 +59,18 @@ Configuration describing the endpoints and queries are stored in a mongo collect
 
 ### Build the CLI tool
 
-Xenia has a CLI tool that allows you to manage endpoints and perform other actions.
+Xenia has a CLI tool that allows you to manage endpoints and perform other actions. You'll need to build it:
 
-1) Build the tool:
+   ```
+   $ cd $GOPATH/src/github.com/coralproject/xenia/cmd/xenia
+   $ go build
+   ```
 
-```
-cd $GOPATH/src/github.com/coralproject/xenia/cmd/xenia
-go build
-```
+   _Note: It is best to run with logging level 0 when using the xenia command:_
 
-_Note: It is best to run with logging level 0 when using the xenia command:_
-
-```
-export XENIA_LOGGING_LEVEL=0
-```
+   ```
+   $ export XENIA_LOGGING_LEVEL=0
+   ```
 
 ### Creating a Xenia database for the first time
 
