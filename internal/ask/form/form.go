@@ -74,7 +74,7 @@ type Form struct {
 	CreatedBy      interface{}            `json:"created_by" bson:"created_by"`
 	UpdatedBy      interface{}            `json:"updated_by" bson:"updated_by"`
 	DeletedBy      interface{}            `json:"deleted_by" bson:"deleted_by"`
-	DateCreated    time.Time              `json:"date_created,omitempty" bson:"date_created,omitempty"`
+	DateCreated    time.Time              `json:"date_created" bson:"date_created,omitempty"`
 	DateUpdated    time.Time              `json:"date_updated,omitempty" bson:"date_updated,omitempty"`
 	DateDeleted    time.Time              `json:"date_deleted,omitempty" bson:"date_deleted,omitempty"`
 }
@@ -107,6 +107,14 @@ func Upsert(context interface{}, db *db.DB, form *Form) error {
 	if err := form.Validate(); err != nil {
 		log.Error(context, "Upsert", err, "Completed")
 		return err
+	}
+
+	if isNewForm {
+		form.DateCreated = time.Now()
+	}
+
+	if !isNewForm {
+		form.DateUpdated = time.Now()
 	}
 
 	f := func(c *mgo.Collection) error {
