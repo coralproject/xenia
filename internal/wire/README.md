@@ -15,26 +15,89 @@ Package wire provides support for generating views.
 
 ## <a name="pkg-index">Index</a>
 * [Variables](#pkg-variables)
+* [func AddToGraph(context interface{}, db *db.DB, store *cayley.Handle, item map[string]interface{}) error](#AddToGraph)
+* [func RemoveFromGraph(context interface{}, store *cayley.Handle, quadParams []QuadParam) error](#RemoveFromGraph)
+* [type QuadParam](#QuadParam)
+  * [func (q *QuadParam) Validate() error](#QuadParam.Validate)
 * [type Result](#Result)
   * [func Execute(context interface{}, mgoDB *db.DB, graphDB *cayley.Handle, viewParams *ViewParams) (*Result, error)](#Execute)
 * [type ViewParams](#ViewParams)
 
 
 #### <a name="pkg-files">Package files</a>
-[relationships.go](/src/github.com/coralproject/shelf/internal/wire/relationships.go) [views.go](/src/github.com/coralproject/shelf/internal/wire/views.go) [wire.go](/src/github.com/coralproject/shelf/internal/wire/wire.go) 
+[relationships.go](/src/github.com/coralproject/shelf/internal/wire/relationships.go) [wire.go](/src/github.com/coralproject/shelf/internal/wire/wire.go) 
 
 
 
 ## <a name="pkg-variables">Variables</a>
 ``` go
-var ErrNotFound = errors.New("View items Not found")
+var (
+
+    // ErrItemType is used in item parsing.
+    ErrItemType = errors.New("Could not parse item type")
+
+    // ErrItemData is used in item parsing.
+    ErrItemData = errors.New("Could not parse item data")
+
+    // ErrItemID is used in item parsing.
+    ErrItemID = errors.New("Could not parse item ID")
+)
 ```
-ErrNotFound is an error variable thrown when no results are returned from a Mongo query.
+``` go
+var (
+    // ErrNotFound is an error variable thrown when no results are returned from a Mongo query.
+    ErrNotFound = errors.New("View items Not found")
+)
+```
+
+
+## <a name="AddToGraph">func</a> [AddToGraph](/src/target/relationships.go?s=1229:1333#L39)
+``` go
+func AddToGraph(context interface{}, db *db.DB, store *cayley.Handle, item map[string]interface{}) error
+```
+AddToGraph adds relationships as quads into the cayley graph.
+
+
+
+## <a name="RemoveFromGraph">func</a> [RemoveFromGraph](/src/target/relationships.go?s=2246:2339#L75)
+``` go
+func RemoveFromGraph(context interface{}, store *cayley.Handle, quadParams []QuadParam) error
+```
+RemoveFromGraph removes relationship quads from the cayley graph.
 
 
 
 
-## <a name="Result">type</a> [Result](/src/target/wire.go?s=325:385#L4)
+## <a name="QuadParam">type</a> [QuadParam](/src/target/relationships.go?s=828:991#L24)
+``` go
+type QuadParam struct {
+    Subject   string `validate:"required,min=2"`
+    Predicate string `validate:"required,min=2"`
+    Object    string `validate:"required,min=2"`
+}
+```
+QuadParam contains information needed to add/remove relationships
+to/from the cayley graph.
+
+
+
+
+
+
+
+
+
+
+### <a name="QuadParam.Validate">func</a> (\*QuadParam) [Validate](/src/target/relationships.go?s=1050:1086#L31)
+``` go
+func (q *QuadParam) Validate() error
+```
+Validate checks the QuadParams value for consistency.
+
+
+
+
+## <a name="Result">type</a> [Result](/src/target/wire.go?s=911:971#L27)
 ``` go
 type Result struct {
     Results interface{} `json:"results"`
@@ -48,7 +111,7 @@ Result represents what a user will receive after generating a view.
 
 
 
-### <a name="Execute">func</a> [Execute](/src/target/wire.go?s=890:1002#L27)
+### <a name="Execute">func</a> [Execute](/src/target/wire.go?s=1589:1701#L51)
 ``` go
 func Execute(context interface{}, mgoDB *db.DB, graphDB *cayley.Handle, viewParams *ViewParams) (*Result, error)
 ```
@@ -58,12 +121,13 @@ Execute executes a graph query to generate the specified view.
 
 
 
-## <a name="ViewParams">type</a> [ViewParams](/src/target/wire.go?s=636:740#L18)
+## <a name="ViewParams">type</a> [ViewParams](/src/target/wire.go?s=1222:1439#L41)
 ``` go
 type ViewParams struct {
-    ViewName          string
-    ItemKey           string
-    ResultsCollection string
+    ViewName          string `json:"view_name"`
+    ItemKey           string `json:"item_key"`
+    ResultsCollection string `json:"results_collection"`
+    BufferLimit       int    `json:"buffer_limit"`
 }
 ```
 ViewParams represents how the View will be generated and persisted.

@@ -10,6 +10,7 @@ import (
 	"github.com/ardanlabs/kit/db"
 	"github.com/ardanlabs/kit/web/app"
 	"github.com/coralproject/shelf/cmd/xeniad/routes"
+	"github.com/coralproject/shelf/internal/wire/pattern/patternfix"
 	"github.com/coralproject/shelf/internal/wire/relationship/relationshipfix"
 	"github.com/coralproject/shelf/internal/wire/view/viewfix"
 	"github.com/coralproject/shelf/internal/xenia/mask/mfix"
@@ -36,6 +37,7 @@ func TestMain(m *testing.M) {
 // runTest initializes the environment for the tests and allows for
 // the proper return code if the test fails or succeeds.
 func runTest(m *testing.M) int {
+
 	// In order to get a Mongo session we need the name of the database we
 	// are using. The web framework middleware is using this by convention.
 	dbName, err := cfg.String("MONGO_DB")
@@ -71,6 +73,9 @@ func runTest(m *testing.M) int {
 
 	loadViews("context", db)
 	defer viewfix.Remove("context", db, viewPrefix)
+
+	loadPatterns("context", db)
+	defer patternfix.Remove("context", db, patternPrefix)
 
 	return m.Run()
 }
@@ -141,6 +146,20 @@ func loadViews(context interface{}, db *db.DB) error {
 	}
 
 	if err := viewfix.Add(context, db, views[0:2]); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// loadPatterns adds patterns to run tests.
+func loadPatterns(context interface{}, db *db.DB) error {
+	ps, _, err := patternfix.Get()
+	if err != nil {
+		return err
+	}
+
+	if err := patternfix.Add(context, db, ps[0:2]); err != nil {
 		return err
 	}
 

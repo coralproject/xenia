@@ -18,6 +18,7 @@ import (
 	"github.com/cayleygraph/cayley/quad"
 	"github.com/coralproject/shelf/internal/sponge/item/itemfix"
 	"github.com/coralproject/shelf/internal/wire"
+	"github.com/coralproject/shelf/internal/wire/pattern/patternfix"
 	"github.com/coralproject/shelf/internal/wire/relationship/relationshipfix"
 	"github.com/coralproject/shelf/internal/wire/view/viewfix"
 )
@@ -25,9 +26,10 @@ import (
 var mgoCfg mongo.Config
 
 const (
-	relPrefix  = "RTEST_"
-	itemPrefix = "ITEST_"
-	viewPrefix = "VTEST_"
+	relPrefix     = "RTEST_"
+	itemPrefix    = "ITEST_"
+	viewPrefix    = "VTEST_"
+	patternPrefix = "PTEST_"
 )
 
 func init() {
@@ -83,6 +85,18 @@ func loadTestData(context interface{}, db *db.DB) error {
 	}
 
 	if err := itemfix.Add(context, db, items); err != nil {
+		return err
+	}
+
+	// -----------------------------------------------------------
+	// Load example patterns.
+
+	patterns, _, err := patternfix.Get()
+	if err != nil {
+		return err
+	}
+
+	if err := patternfix.Add(context, db, patterns); err != nil {
 		return err
 	}
 
@@ -155,6 +169,7 @@ func unloadTestData(context interface{}, db *db.DB) error {
 	itemfix.Remove("context", db, itemPrefix)
 	relationshipfix.Remove("context", db, relPrefix)
 	viewfix.Remove("context", db, viewPrefix)
+	patternfix.Remove("context", db, patternPrefix)
 
 	// ------------------------------------------------------------
 	// Clear cayley graph.
@@ -190,18 +205,14 @@ func unloadTestData(context interface{}, db *db.DB) error {
 
 }
 
-//==============================================================================
-
-// TestGenerateView tests the generation of a view, opting not to persist the view.
-func TestGenerateView(t *testing.T) {
+// setup initializes for each indivdual test.
+func setup(t *testing.T) (*db.DB, *cayley.Handle) {
 	tests.ResetLog()
-	defer tests.DisplayLog()
 
 	db, err := db.NewMGO(tests.Context, tests.TestSession)
 	if err != nil {
-		t.Fatalf("\t%s\tShould be able to get a Mongo session : %v", tests.Failed, err)
+		t.Fatalf("%s\tShould be able to get a Mongo session : %v", tests.Failed, err)
 	}
-	defer db.CloseMGO(tests.Context)
 
 	opts := make(map[string]interface{})
 	opts["database_name"] = cfg.MustString("MONGO_DB")
@@ -212,8 +223,21 @@ func TestGenerateView(t *testing.T) {
 		t.Fatalf("\t%s\tShould be able to get a Cayley handle : %v", tests.Failed, err)
 	}
 
-	// -----------------------------------------------------------
-	// Generate the view.
+	return db, store
+}
+
+// teardown deinitializes for each indivdual test.
+func teardown(t *testing.T, db *db.DB) {
+	db.CloseMGO(tests.Context)
+	tests.DisplayLog()
+}
+
+//==============================================================================
+
+// TestExecuteView tests the generation of a view, opting not to persist the view.
+func TestExecuteView(t *testing.T) {
+	db, store := setup(t)
+	defer teardown(t, db)
 
 	t.Log("Given the need to generate a view.")
 	{
@@ -243,30 +267,46 @@ func TestGenerateView(t *testing.T) {
 	}
 }
 
+// TestExecuteBackwardsView tests the generation of a view with multiple
+// out direction relationships, opting not to persist the view.
+func TestExecuteBackwardsView(t *testing.T) {
+	db, store := setup(t)
+	defer teardown(t, db)
+
+	t.Log("Given the need to generate a view with multiple backwards direction relationships.")
+	{
+		t.Log("\tWhen using the view, relationship, and item fixtures.")
+		{
+
+			// Form the view parameters.
+			viewParams := wire.ViewParams{
+				ViewName: viewPrefix + "thread_backwards",
+				ItemKey:  "ITEST_80aa936a-f618-4234-a7be-df59a14cf8de",
+			}
+
+			// Generate the view.
+			result, err := wire.Execute(tests.Context, db, store, &viewParams)
+			if err != nil {
+				t.Fatalf("\t%s\tShould be able to generate the backwards view : %s", tests.Failed, err)
+			}
+			t.Logf("\t%s\tShould be able to generate the backwards view", tests.Success)
+
+			// Check the resulting items.
+			items, ok := result.Results.([]bson.M)
+			if !ok || len(items) != 3 {
+				t.Fatalf("\t%s\tShould be able to get e items in the view : %s", tests.Failed, err)
+			}
+			t.Logf("\t%s\tShould be able to get 3 items in the view.", tests.Success)
+		}
+	}
+}
+
 // TestPersistView tests the generation of a view, opting to persist the view.
 func TestPersistView(t *testing.T) {
-	tests.ResetLog()
-	defer tests.DisplayLog()
+	db, store := setup(t)
+	defer teardown(t, db)
 
-	db, err := db.NewMGO(tests.Context, tests.TestSession)
-	if err != nil {
-		t.Fatalf("\t%s\tShould be able to get a Mongo session : %v", tests.Failed, err)
-	}
-	defer db.CloseMGO(tests.Context)
-
-	opts := make(map[string]interface{})
-	opts["database_name"] = cfg.MustString("MONGO_DB")
-	opts["username"] = cfg.MustString("MONGO_USER")
-	opts["password"] = cfg.MustString("MONGO_PASS")
-	store, err := cayley.NewGraph("mongo", cfg.MustString("MONGO_HOST"), opts)
-	if err != nil {
-		t.Fatalf("\t%s\tShould be able to get a Cayley handle : %v", tests.Failed, err)
-	}
-
-	// -----------------------------------------------------------
-	// Generate the view.
-
-	t.Log("Given the need to generate a view.")
+	t.Log("Given the need to generate and persist a view.")
 	{
 		t.Log("\tWhen using the view, relationship, and item fixtures.")
 		{
@@ -317,6 +357,169 @@ func TestPersistView(t *testing.T) {
 				t.Fatalf("\t%s\tShould be able to drop the output collection : %s", tests.Failed, err)
 			}
 			t.Logf("\t%s\tShould be able to drop the output collection.", tests.Success)
+		}
+	}
+}
+
+// TestPersistViewWithBuffer tests the buffered saving of a view.
+func TestPersistViewWithBuffer(t *testing.T) {
+	db, store := setup(t)
+	defer teardown(t, db)
+
+	t.Log("Given the need to perform a buffered save of a view.")
+	{
+		t.Log("\tWhen using the view, relationship, and item fixtures.")
+		{
+
+			// Form the view parameters.
+			viewParams := wire.ViewParams{
+				ViewName:          viewPrefix + "thread",
+				ItemKey:           "ITEST_c1b2bbfe-af9f-4903-8777-bd47c4d5b20a",
+				ResultsCollection: "testcollection",
+				BufferLimit:       2,
+			}
+
+			// Generate the view.
+			result, err := wire.Execute(tests.Context, db, store, &viewParams)
+			if err != nil {
+				t.Fatalf("\t%s\tShould be able to generate the view : %s", tests.Failed, err)
+			}
+			t.Logf("\t%s\tShould be able to generate the view", tests.Success)
+
+			// Check the result message.
+			msg, ok := result.Results.(bson.M)
+			if !ok || msg["number_of_results"] != 5 {
+				t.Fatalf("\t%s\tShould be able to get 5 items in the view : %s", tests.Failed, err)
+			}
+			t.Logf("\t%s\tShould be able to get 5 items in the view.", tests.Success)
+
+			// Verify that the output collection exists.
+			var viewItems []bson.M
+			f := func(c *mgo.Collection) error {
+				return c.Find(nil).All(&viewItems)
+			}
+
+			if err := db.ExecuteMGO(tests.Context, "testcollection", f); err != nil {
+				t.Fatalf("\t%s\tShould be able to query the output collection : %s", tests.Failed, err)
+			}
+			t.Logf("\t%s\tShould be able to query the output collection.", tests.Success)
+
+			if len(viewItems) != 5 {
+				t.Fatalf("\t%s\tShould be able to get 5 items from the output collection : %s", tests.Failed, err)
+			}
+			t.Logf("\t%s\tShould be able to get 5 items from the output collection.", tests.Success)
+
+			// Delete the persisted collection to clean up.
+			f = func(c *mgo.Collection) error {
+				return c.DropCollection()
+			}
+
+			if err := db.ExecuteMGO(tests.Context, "testcollection", f); err != nil {
+				t.Fatalf("\t%s\tShould be able to drop the output collection : %s", tests.Failed, err)
+			}
+			t.Logf("\t%s\tShould be able to drop the output collection.", tests.Success)
+		}
+	}
+}
+
+// TestExecuteNameFail tests that the correct result is returned when
+// an invalid view name is provided.
+func TestExecuteNameFail(t *testing.T) {
+	db, store := setup(t)
+	defer teardown(t, db)
+
+	t.Log("Given the need to catch an invalid view name.")
+	{
+		t.Log("\tWhen using the view, relationship, and item fixtures.")
+		{
+
+			// Form the view parameters.
+			viewParams := wire.ViewParams{
+				ViewName: viewPrefix + "this view name does not exist",
+				ItemKey:  "ITEST_80aa936a-f618-4234-a7be-df59a14cf8de",
+			}
+
+			// Generate the view.
+			result, err := wire.Execute(tests.Context, db, store, &viewParams)
+			if err == nil {
+				t.Fatalf("\t%s\tShould return an error for an invalid view name: %s", tests.Failed, err)
+			}
+			t.Logf("\t%s\tShould return an error for an invalid view name", tests.Success)
+
+			// Check the resulting items.
+			errDoc, ok := result.Results.(bson.M)
+			if !ok || len(errDoc["error"].(string)) == 0 {
+				t.Fatalf("\t%s\tShould return a single error document : %s", tests.Failed, err)
+			}
+			t.Logf("\t%s\tShould return a single error document.", tests.Success)
+		}
+	}
+}
+
+// TestExecuteTypeFail tests that the correct result is returned when
+// an invalid start type is defined in view metadata.
+func TestExecuteTypeFail(t *testing.T) {
+	db, store := setup(t)
+	defer teardown(t, db)
+
+	t.Log("Given the need to catch an invalid start type.")
+	{
+		t.Log("\tWhen using the view, relationship, and item fixtures.")
+		{
+
+			// Form the view parameters.
+			viewParams := wire.ViewParams{
+				ViewName: viewPrefix + "comments from authors flagged by a user",
+				ItemKey:  "ITEST_80aa936a-f618-4234-a7be-df59a14cf8de",
+			}
+
+			// Generate the view.
+			result, err := wire.Execute(tests.Context, db, store, &viewParams)
+			if err == nil {
+				t.Fatalf("\t%s\tShould return an error for an invalid start type: %s", tests.Failed, err)
+			}
+			t.Logf("\t%s\tShould return an error for an invalid start type", tests.Success)
+
+			// Check the resulting items.
+			errDoc, ok := result.Results.(bson.M)
+			if !ok || len(errDoc["error"].(string)) == 0 {
+				t.Fatalf("\t%s\tShould return a single error document : %s", tests.Failed, err)
+			}
+			t.Logf("\t%s\tShould return a single error document.", tests.Success)
+		}
+	}
+}
+
+// TestExecuteRelationshipFail tests that the correct result is returned when
+// an invalid relationship is defined in view metadata.
+func TestExecuteRelationshipFail(t *testing.T) {
+	db, store := setup(t)
+	defer teardown(t, db)
+
+	t.Log("Given the need to catch an invalid relationship.")
+	{
+		t.Log("\tWhen using the view, relationship, and item fixtures.")
+		{
+
+			// Form the view parameters.
+			viewParams := wire.ViewParams{
+				ViewName: viewPrefix + "has invalid starting relationship",
+				ItemKey:  "ITEST_80aa936a-f618-4234-a7be-df59a14cf8de",
+			}
+
+			// Generate the view.
+			result, err := wire.Execute(tests.Context, db, store, &viewParams)
+			if err == nil {
+				t.Fatalf("\t%s\tShould return an error for an invalid relationship: %s", tests.Failed, err)
+			}
+			t.Logf("\t%s\tShould return an error for an invalid relationship", tests.Success)
+
+			// Check the resulting items.
+			errDoc, ok := result.Results.(bson.M)
+			if !ok || len(errDoc["error"].(string)) == 0 {
+				t.Fatalf("\t%s\tShould return a single error document : %s", tests.Failed, err)
+			}
+			t.Logf("\t%s\tShould return a single error document.", tests.Success)
 		}
 	}
 }

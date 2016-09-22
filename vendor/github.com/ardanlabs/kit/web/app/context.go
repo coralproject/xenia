@@ -69,7 +69,7 @@ func (c *Context) Respond(data interface{}, code int) {
 	// Load any user defined header values.
 	if app.userHeaders != nil {
 		for key, value := range app.userHeaders {
-			log.User("startup", "api : Respond", "Setting user headers : %s:%s", key, value)
+			log.User(c.SessionID, "api : Respond", "Setting user headers : %s:%s", key, value)
 			c.Header().Set(key, value)
 		}
 	}
@@ -87,7 +87,7 @@ func (c *Context) Respond(data interface{}, code int) {
 	c.WriteHeader(code)
 
 	// Marshal the data into a JSON string.
-	jsonData, err := json.Marshal(data)
+	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		log.Error(c.SessionID, "api : Respond", err, "Marshalling JSON response")
 		jsonData = []byte("{}")
