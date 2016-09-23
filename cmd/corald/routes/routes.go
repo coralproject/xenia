@@ -10,10 +10,17 @@ import (
 	"github.com/coralproject/shelf/cmd/corald/handlers"
 )
 
+// Environmental variables.
+const (
+	cfgSpongeHost = "MONGO_HOST"
+	cfgXeniaHost  = "MONGO_AUTHD"
+	cfgAnvilHost  = "ANVIL_HOST"
+)
+
 func init() {
 	// Initialize the configuration and logging systems. Plus anything
 	// else the web app layer needs.
-	app.Init(cfg.EnvProvider{Namespace: "XENIA"})
+	app.Init(cfg.EnvProvider{Namespace: "CORAL"})
 }
 
 // API returns a handler for a set of routes.
@@ -35,11 +42,16 @@ func API(testing ...bool) http.Handler {
 
 // routes manages the handling of the API endpoints.
 func routes(a *app.App) {
-	a.Handle("GET", "/1.0/version", handlers.Version.List)
+	a.Handle("GET", "/v1/version", handlers.Version.List)
 
 	// TODO: For now these are sample routes.
-	a.Handle("GET", "/1.0/form", handlers.Form.List)
-	a.Handle("POST", "/1.0/form", fixtures.Handler("form", http.StatusCreated))
-	a.Handle("GET", "/1.0/form/:form_id", fixtures.Handler("form", http.StatusOK))
-	a.Handle("PUT", "/1.0/form/:form_id", fixtures.NoContent)
+	a.Handle("GET", "/v1/form", handlers.Form.List)
+	a.Handle("POST", "/v1/form", fixtures.Handler("form", http.StatusCreated))
+	a.Handle("GET", "/v1/form/:form_id", fixtures.Handler("form", http.StatusOK))
+	a.Handle("PUT", "/v1/form/:form_id", fixtures.NoContent)
+
+	// Items
+	a.Handle("GET", "/v1/item/:view_name/:item_key/:query_set", handlers.Item.Retrieve)
+	a.Handle("POST", "/v1/item", fixtures.Handler("itemid", http.StatusCreated))
+	a.Handle("PUT", "/v1/item/:item_id", fixtures.NoContent)
 }
