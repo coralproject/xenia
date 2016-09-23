@@ -88,6 +88,12 @@ func Execute(context interface{}, mgoDB *db.DB, graphDB *cayley.Handle, viewPara
 		return errResult(err), err
 	}
 
+	rels, err := itemRels(context, graphDB, ids)
+	if err != nil {
+		log.Error(context, "Execute", err, "Completed")
+		return errResult(err), err
+	}
+
 	// Persist the items in the view, if an output Collection is provided.
 	if viewParams.ResultsCollection != "" {
 		if err := viewSave(context, mgoDB, v, viewParams, ids); err != nil {
@@ -101,7 +107,7 @@ func Execute(context interface{}, mgoDB *db.DB, graphDB *cayley.Handle, viewPara
 	}
 
 	// Otherwise, gather the items in the view.
-	items, err := viewItems(context, mgoDB, v, ids)
+	items, err := viewItems(context, mgoDB, v, ids, rels)
 	if err != nil {
 		log.Error(context, "Execute", err, "Completed")
 		return errResult(err), err
@@ -319,7 +325,7 @@ func viewSave(context interface{}, mgoDB *db.DB, v *view.View, viewParams *ViewP
 }
 
 // viewItems retrieves the items corresponding to the provided list of item IDs.
-func viewItems(context interface{}, db *db.DB, v *view.View, ids []string) ([]bson.M, error) {
+func viewItems(context interface{}, db *db.DB, v *view.View, ids []string, rels map[string][]string) ([]bson.M, error) {
 
 	// Form the query.
 	var results []bson.M
@@ -335,5 +341,35 @@ func viewItems(context interface{}, db *db.DB, v *view.View, ids []string) ([]bs
 		return nil, err
 	}
 
+	for i, result := range results {
+		if rels[result["item_id"].(string)] != nil {
+			results[i]["rels"] = rels[result["item_id"].(string)]
+		}
+	}
+
 	return results, nil
+}
+
+func itemRels(context interface{}, graphDB *cayley.Handle, ids []string) (map[string][]string, error) {
+
+	rels := map[string][]string{}
+
+	for _, id := range ids {
+
+		p := cayley.StartPath(graphDB, quad.String(id)).Out()
+		err := p.Iterate(nil).EachValue(nil, func(value quad.Value) {
+			nativeValue := quad.NativeOf(value)
+			if rels[id] == nil {
+				rels[id] = []string{}
+			}
+			rels[id] = append(rels[id], nativeValue.(string))
+		})
+		if err != nil {
+			return nil, err
+		}
+
+	}
+
+	return rels, nil
+
 }
