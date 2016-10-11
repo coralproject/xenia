@@ -164,7 +164,7 @@ func platformRoutes(w *web.Web) {
 	w.Handle("GET", "/v1/platform/pattern",
 		handlers.Proxy(spongedURL,
 			func(c *web.Context) string {
-				return "/v1/pattern/"
+				return "/v1/pattern"
 			}))
 	w.Handle("PUT", "/v1/platform/pattern/:pattern_id",
 		handlers.Proxy(spongedURL,
@@ -184,7 +184,7 @@ func platformRoutes(w *web.Web) {
 	w.Handle("GET", "/v1/platform/view",
 		handlers.Proxy(xeniadURL,
 			func(c *web.Context) string {
-				return "/v1/view/"
+				return "/v1/view"
 			}))
 	w.Handle("PUT", "/v1/platform/view/:view_id",
 		handlers.Proxy(xeniadURL,
@@ -201,7 +201,7 @@ func platformRoutes(w *web.Web) {
 	w.Handle("GET", "/v1/platform/relationship",
 		handlers.Proxy(xeniadURL,
 			func(c *web.Context) string {
-				return "/v1/relationship/"
+				return "/v1/relationship"
 			}))
 	w.Handle("PUT", "/v1/platform/relationship/:relationship_id",
 		handlers.Proxy(xeniadURL,
@@ -215,10 +215,10 @@ func platformRoutes(w *web.Web) {
 			}))
 
 	// QuerySet proxies forward requests to the matching xeniad endpoints.
-	w.Handle("GET", "/v1/query",
+	w.Handle("GET", "/v1/platform/query",
 		handlers.Proxy(xeniadURL,
 			func(c *web.Context) string {
-				return "/v1/query/"
+				return "/v1/query"
 			}))
 	w.Handle("PUT", "/v1/platform/query/:query_id",
 		handlers.Proxy(xeniadURL,
