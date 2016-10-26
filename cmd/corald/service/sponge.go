@@ -1,13 +1,11 @@
 package service
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"net/http"
 
 	"github.com/ardanlabs/kit/web"
-	"github.com/coralproject/shelf/internal/platform/auth"
 	"github.com/coralproject/shelf/internal/sponge/item"
 )
 
@@ -32,7 +30,7 @@ func GetItemByID(c *web.Context, itemID string) (*item.Item, error) {
 	// Get the item by ID
 	url := spongedURL + "/v1/item/" + itemID
 
-	resp, err := requestSponge(c, http.MethodGet, url, nil)
+	resp, err := requestService(c, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -69,35 +67,11 @@ func UpsertItem(c *web.Context, itm *item.Item) error {
 		return err
 	}
 
-	resp, err := requestSponge(c, http.MethodPost, url, payload)
+	resp, err := requestService(c, http.MethodPost, url, payload)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
 	return nil
-}
-
-/*=======================================================================================*/
-
-func requestSponge(c *web.Context, verb string, url string, payload []byte) (*http.Response, error) {
-	req, err := http.NewRequest(verb, url, bytes.NewBuffer(payload))
-	if err != nil {
-		return nil, err
-	}
-
-	// Extract the signer from the application context.
-	if signer, ok := c.Web.Ctx["signer"].(auth.Signer); ok {
-		// Sign the service request with the signer.
-		if err = SignServiceRequest(c.SessionID, signer, req); err != nil {
-			return nil, err
-		}
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
 }

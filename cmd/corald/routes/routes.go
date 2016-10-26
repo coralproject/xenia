@@ -119,7 +119,7 @@ func API() http.Handler {
 		log.Error("startup", "Init", err, "Service Xeniad needs to be setup.")
 		os.Exit(1)
 	}
-	w.Ctx["xeniadURL "] = cfg.MustURL(cfgXeniadURL).String()
+	w.Ctx["xeniadURL"] = cfg.MustURL(cfgXeniadURL).String()
 
 	log.Dev("startup", "Init", "Initalizing routes")
 	routes(w)
@@ -137,14 +137,16 @@ func routes(w *web.Web) {
 	w.Handle("GET", "/v1/form/:form_id", fixtures.Handler("forms/form", http.StatusOK))
 	w.Handle("PUT", "/v1/form/:form_id", fixtures.NoContent)
 
-	// Execute the :query_set on the view :view_name on this :item_key.
+	// Execute the :query_set on the view :view_name using this :item_key
+	// as the starting item of the paths.
 	w.Handle("GET", "/v1/exec/:query_set/view/:view_name/:item_key",
 		handlers.Proxy(xeniadURL,
 			func(c *web.Context) string {
 				return "/v1/exec/" + c.Params["query_set"] + "/view/" + c.Params["view_name"] + "/" + c.Params["item_key"]
 			}))
 
-	// Get all the items from the view :view_name on this :item_key.
+	// Execute the provided custom query on the view :view_name using this :item_key
+	// as the starting item of the paths.
 	w.Handle("POST", "/v1/exec/view/:view_name/:item_key",
 		handlers.Proxy(xeniadURL,
 			func(c *web.Context) string {
@@ -155,23 +157,17 @@ func routes(w *web.Web) {
 	w.Handle("GET", "/v1/exec/:query_set",
 		handlers.Proxy(xeniadURL, func(c *web.Context) string { return "/v1/exec/" + c.Params["query_set"] }))
 
-	// Send a new query to xenia. ********* TEMPORAL *********
-	w.Handle("PUT", "/v1/query",
-		handlers.Proxy(xeniadURL, func(c *web.Context) string { return "/v1/query" }))
-
-	// Execute a custom xenia query. ********* TEMPORAL *********
-	w.Handle("POST", "/v1/exec",
-		handlers.Proxy(xeniadURL, func(c *web.Context) string { return "/v1/exec" }))
-
 	// Create or removes Actions.
 	w.Handle("POST", "/v1/action/:action/user/:user_key/on/item/:item_key", handlers.Action.Add)
-
 	w.Handle("DELETE", "/v1/action/:action/user/:user_key/on/item/:item_key", handlers.Action.Remove)
 
 	// Save or Update Items
 	w.Handle("PUT", "/v1/item",
 		handlers.Proxy(spongedURL, func(c *web.Context) string { return "/v1/item" }))
-
 	w.Handle("POST", "/v1/item",
 		handlers.Proxy(spongedURL, func(c *web.Context) string { return "/v1/item" }))
+
+	// Upsert or list settings.
+	w.Handle("PUT", "/v1/settings", handlers.Settings.Upsert)
+	w.Handle("GET", "/v1/settings", handlers.Settings.List)
 }

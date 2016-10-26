@@ -9,12 +9,12 @@ import (
 	"github.com/ardanlabs/kit/tests"
 )
 
-// TestActionsPOST sample test for the POST call.
+// TestActionsPOST sample test for the POST call to add actions to items.
 func TestActionsPOST(t *testing.T) {
 	tests.ResetLog()
 	defer tests.DisplayLog()
 
-	t.Log("Given the need to test POST action call.")
+	t.Log("Given the need to add an action to an item.")
 	{
 		action := "flagged_by"
 		userID := "ITEST_80aa936a-f618-4234-a7be-df59a14cf8de"
@@ -36,7 +36,7 @@ func TestActionsPOST(t *testing.T) {
 		}
 	}
 
-	t.Log("Given the need to test a wrong POST action call.")
+	t.Log("Given the need to catch an error when adding an action to an item.")
 	{
 		action := "flagged_by"
 		userID := "ITEST_80aa936a-f618-4234-a7be-df59a14cf8de"
@@ -60,12 +60,12 @@ func TestActionsPOST(t *testing.T) {
 
 }
 
-// TestActionsDELETE sample test for the DELETE call.
+// TestActionsDELETE sample test for the DELETE call to remove actions from items.
 func TestActionsDELETE(t *testing.T) {
 	tests.ResetLog()
 	defer tests.DisplayLog()
 
-	t.Log("Given the need to test DELETE action call.")
+	t.Log("Given the need to remove actions from items.")
 	{
 		action := "flagged_by"
 		userID := "ITEST_a63af637-58af-472b-98c7-f5c00743bac6"
