@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"net/http"
 
 	"github.com/ardanlabs/kit/web"
@@ -52,4 +53,27 @@ func RewritePath(c *web.Context, targetPath string) func(*http.Request) {
 	}
 
 	return f
+}
+
+func requestService(c *web.Context, verb string, url string, payload []byte) (*http.Response, error) {
+	req, err := http.NewRequest(verb, url, bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract the signer from the application context.
+	if signer, ok := c.Web.Ctx["signer"].(auth.Signer); ok {
+		// Sign the service request with the signer.
+		if err = SignServiceRequest(c.SessionID, signer, req); err != nil {
+			return nil, err
+		}
+	}
+
+	// Get the response.
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
