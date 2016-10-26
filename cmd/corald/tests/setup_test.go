@@ -3,22 +3,21 @@ package tests
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 
-	"github.com/cayleygraph/cayley"
-
 	"github.com/ardanlabs/kit/cfg"
 	"github.com/ardanlabs/kit/tests"
+	"github.com/cayleygraph/cayley"
 	"github.com/coralproject/shelf/cmd/corald/routes"
 	"github.com/coralproject/shelf/internal/platform/db"
 	"github.com/coralproject/shelf/internal/sponge"
 	"github.com/coralproject/shelf/internal/sponge/item"
 	"github.com/coralproject/shelf/internal/sponge/item/itemfix"
+	xeniaquery "github.com/coralproject/shelf/internal/xenia/query"
 	"github.com/coralproject/shelf/tstdata"
 )
 
@@ -36,8 +35,12 @@ func TestMain(m *testing.M) {
 func runTest(m *testing.M) int {
 
 	// Create stub server for Sponged.
-	server := setup()
-	cfg.SetString("SPONGED_URL", server)
+	spongeServer := setupSponge()
+	cfg.SetString("SPONGED_URL", spongeServer)
+
+	// Create stub server for Xeniad.
+	xeniaServer := setupXenia()
+	cfg.SetString("XENIAD_URL", xeniaServer)
 
 	mongoURI := cfg.MustURL("MONGO_URI")
 
@@ -116,50 +119,111 @@ func unloadItems(context interface{}, db *db.DB, store *cayley.Handle) error {
 	return nil
 }
 
-// Setup sets the stubbed Sponged service.
+// setupSponge creates the stubbed Sponged service.
 // It will check that the data it gets is the appropiate.
-func setup() string {
+func setupSponge() string {
 
 	// Initialization of stub server for Sponged.
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		var err error
-		var itm item.Item
-
-		// check that the row is what we want it to be
+		// Write the response for each respective path.
+		// TODO : CHECK DATA THAT ARRIVES TO EACH ENDPOINT ON SPONGED TO BE THE APPROPIATE.
 		switch r.RequestURI {
-		// TO DO : CHECK DATA THAT ARRIVES TO EACH ENDPOINT ON SPONGED TO BE THE APPROPIATE
 		case "/v1/item/ITEST_d16790f8-13e9-4cb4-b9ef-d82835589660":
-			itm = item.Item{ID: "ITEST_d16790f8-13e9-4cb4-b9ef-d82835589660", Type: "comment", Data: map[string]interface{}{"body": "Something."}}
+			itm := item.Item{
+				ID:   "ITEST_d16790f8-13e9-4cb4-b9ef-d82835589660",
+				Type: "comment",
+				Data: map[string]interface{}{
+					"body": "Something.",
+				},
+			}
 			itm.Data["flagged_by"] = []string{"ITEST_80aa936a-f618-4234-a7be-df59a14cf8de"}
-			b, _ := json.Marshal([]item.Item{itm})
+			b, err := json.Marshal([]item.Item{itm})
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				break
+			}
 			w.Write(b)
+			w.WriteHeader(http.StatusOK)
+
 		case "/v1/item/ITEST_d1dfa366-d2f7-4a4a-a64f-af89d4c97d82":
-			itm = item.Item{ID: "ITEST_d1dfa366-d2f7-4a4a-a64f-af89d4c97d82", Type: "comment", Data: map[string]interface{}{"body": "Something."}}
+			itm := item.Item{
+				ID:   "ITEST_d1dfa366-d2f7-4a4a-a64f-af89d4c97d82",
+				Type: "comment",
+				Data: map[string]interface{}{
+					"body": "Something.",
+				},
+			}
 			itm.Data["flagged_by"] = []string{"ITEST_a63af637-58af-472b-98c7-f5c00743bac6"}
-			b, _ := json.Marshal([]item.Item{itm})
+			b, err := json.Marshal([]item.Item{itm})
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				break
+			}
 			w.Write(b)
+			w.WriteHeader(http.StatusOK)
+
 		case "/v1/item/wrongitem":
-			b, _ := json.Marshal([]item.Item{})
+			b, err := json.Marshal([]item.Item{})
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				break
+			}
 			w.Write(b)
+			w.WriteHeader(http.StatusOK)
 
 		case "/v1/item":
-			// Decode the item.
-			err = json.NewDecoder(r.Body).Decode(&itm)
-		default:
-			err = errors.New("Bad Request")
-		}
+			if err := json.NewDecoder(r.Body).Decode(&item.Item{}); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				break
+			}
+			w.WriteHeader(http.StatusOK)
 
-		if err != nil {
+		default:
 			w.WriteHeader(http.StatusBadRequest)
 		}
-		if err == nil {
-			w.WriteHeader(http.StatusOK)
-		}
+
 		w.Header().Set("Content-Type", "application/json")
+	}))
 
-		fmt.Fprintln(w, err)
+	return server.URL
+}
 
+// setupXenia creates the stubbed xeniad service.
+func setupXenia() string {
+
+	// Initialization of stub server for Sponged.
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		// Write the response for each respective method.
+		switch r.Method {
+		case "POST":
+			doc := map[string]interface{}{
+				"id":   "d16790f8-13e9-4cb4-b9ef-d82835589660",
+				"type": "settings",
+				"data": map[string]interface{}{
+					"moderation_type": "pre",
+				},
+			}
+			docs := map[string]interface{}{
+				"Docs": doc,
+			}
+			results := xeniaquery.Result{
+				Results: docs,
+			}
+			b, err := json.Marshal(results)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				break
+			}
+			w.Write(b)
+			w.WriteHeader(http.StatusOK)
+
+		default:
+			w.WriteHeader(http.StatusBadRequest)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
 	}))
 
 	return server.URL

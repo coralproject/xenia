@@ -66,7 +66,7 @@ func (settingsHandle) Upsert(c *web.Context) error {
 		return err
 	}
 
-	c.Respond(nil, http.StatusOK)
+	c.Respond(itm, http.StatusOK)
 	return nil
 }
 
