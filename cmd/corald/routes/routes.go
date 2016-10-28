@@ -122,7 +122,9 @@ func API() http.Handler {
 	w.Ctx["xeniadURL "] = cfg.MustURL(cfgXeniadURL).String()
 
 	log.Dev("startup", "Init", "Initalizing routes")
+
 	routes(w)
+	platformRoutes(w)
 
 	return w
 }
@@ -174,4 +176,84 @@ func routes(w *web.Web) {
 
 	w.Handle("POST", "/v1/item",
 		handlers.Proxy(spongedURL, func(c *web.Context) string { return "/v1/item" }))
+}
+
+// platformRoutes manages the endpoints involved in configuring the
+// Coral Platform.
+func platformRoutes(w *web.Web) {
+
+	// spongedURL is the proxy desitnation for pattern configuration.
+	spongedURL := cfg.MustURL(cfgSpongdURL).String()
+
+	// Pattern proxies forward requests to the matching sponged endpoints.
+	w.Handle("GET", "/v1/platform/pattern",
+		handlers.Proxy(spongedURL,
+			func(c *web.Context) string {
+				return "/v1/pattern"
+			}))
+	w.Handle("PUT", "/v1/platform/pattern/:pattern_id",
+		handlers.Proxy(spongedURL,
+			func(c *web.Context) string {
+				return "/v1/pattern"
+			}))
+	w.Handle("DELETE", "/v1/platform/pattern/:pattern_id",
+		handlers.Proxy(spongedURL,
+			func(c *web.Context) string {
+				return "/v1/pattern/" + c.Params["pattern_id"]
+			}))
+
+	// xeniadURL is the proxy desitination for queryset, relationship and view config.
+	xeniadURL := cfg.MustURL(cfgXeniadURL).String()
+
+	// View proxies forward requests to the matching xeniad endpoints.
+	w.Handle("GET", "/v1/platform/view",
+		handlers.Proxy(xeniadURL,
+			func(c *web.Context) string {
+				return "/v1/view"
+			}))
+	w.Handle("PUT", "/v1/platform/view/:view_id",
+		handlers.Proxy(xeniadURL,
+			func(c *web.Context) string {
+				return "/v1/view"
+			}))
+	w.Handle("DELETE", "/v1/platform/view/:view_id",
+		handlers.Proxy(xeniadURL,
+			func(c *web.Context) string {
+				return "/v1/view/" + c.Params["view_id"]
+			}))
+
+	// Relationship proxies forward requests to the matching xeniad endpoints.
+	w.Handle("GET", "/v1/platform/relationship",
+		handlers.Proxy(xeniadURL,
+			func(c *web.Context) string {
+				return "/v1/relationship"
+			}))
+	w.Handle("PUT", "/v1/platform/relationship/:relationship_id",
+		handlers.Proxy(xeniadURL,
+			func(c *web.Context) string {
+				return "/v1/relationship"
+			}))
+	w.Handle("DELETE", "/v1/platform/relationship/:relationship_id",
+		handlers.Proxy(xeniadURL,
+			func(c *web.Context) string {
+				return "/v1/relationship/" + c.Params["relationship_id"]
+			}))
+
+	// QuerySet proxies forward requests to the matching xeniad endpoints.
+	w.Handle("GET", "/v1/platform/query",
+		handlers.Proxy(xeniadURL,
+			func(c *web.Context) string {
+				return "/v1/query"
+			}))
+	w.Handle("PUT", "/v1/platform/query/:query_id",
+		handlers.Proxy(xeniadURL,
+			func(c *web.Context) string {
+				return "/v1/query"
+			}))
+	w.Handle("DELETE", "/v1/platform/query/:query_id",
+		handlers.Proxy(xeniadURL,
+			func(c *web.Context) string {
+				return "/v1/query/" + c.Params["query_id"]
+			}))
+
 }
