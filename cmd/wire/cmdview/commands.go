@@ -26,5 +26,6 @@ func GetCommands(conn *db.DB, store *cayley.Handle) *cobra.Command {
 	graphDB = store
 
 	addExecute()
+	addList()
 	return viewCmd
 }
